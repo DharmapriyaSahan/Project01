@@ -14,7 +14,7 @@ apps = {
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.args.get('token')
+        token = request.headers.get('token')
         if not token:
             return jsonify({'message' : 'Token is missing!'}), 403
         try:
@@ -32,13 +32,21 @@ def findApp():
         return jsonify(apps[appid])
     return jsonify({'message': 'No app id found'})
 
-@app.route('/api/v1/app/')
+@app.route('/api/v1/app/', methods=['POST'])
 @token_required
 def addApp():
+    try:
+        req_data = request.get_json()
+        app = req_data['app']
+        name = req_data['name']
+        version = req_data['version']
+    except:
+        return jsonify({'message': 'Data is invalid!'}), 403
 
-    return ''
+    print('Here\'s your post data : ' + app + ' - ' + name + ' - ' + version)
+    return make_response('successful',200)
 
-@app.route('/login')
+@app.route('/login', methods=['POST'])
 def login():
     auth = request.authorization
 
@@ -46,7 +54,7 @@ def login():
         token = jwt.encode({'user' : auth.username, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(seconds=150)}, app.config['SECRET_KEY'], algorithm="HS256")
         return jsonify({'token' : token})
 
-    return make_response('Could not verify!', 401, {'WWW-Authenticate' : 'Basic realm="Login Required"'})
+    return make_response('Could not verify!', 404, {'WWW-Authenticate' : 'Basic realm="Login Required"'})
 
 if __name__ == '__main__':
     app.run(port=8083,debug=True)
